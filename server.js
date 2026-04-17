@@ -12,7 +12,6 @@ app.use(express.json());
 
 // NVIDIA NIM API configuration
 const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.com/v1';
-const NIM_API_KEY = process.env.NIM_API_KEY;
 
 // 🔥 REASONING DISPLAY TOGGLE - Shows/hides reasoning in output
 const SHOW_REASONING = false; // Set to true to show reasoning with <think> tags
@@ -45,6 +44,16 @@ app.get('/v1/models', (req, res) => {
 app.post('/v1/chat/completions', async (req, res) => {
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
+
+    // Extract API key from the incoming Authorization header
+    const authHeader = req.headers['authorization'] || '';
+    const NIM_API_KEY = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    if (!NIM_API_KEY) {
+      return res.status(401).json({
+        error: { message: 'No API key provided. Enter your NVIDIA NIM API key in the API Key field.', type: 'invalid_request_error', code: 401 }
+      });
+    }
     
     // Transform OpenAI request to NIM format
     const nimRequest = {
